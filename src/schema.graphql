@@ -1,0 +1,162 @@
+# 1. Type definitions
+# inside the template string goes GraphQL code
+
+# type Query: define a query we can make
+# type <Name>: define a custom type with fields
+
+# type User defines how the custom 'User' model is structured
+# the 'me' query allows to return a User model
+
+# the 'Post' type is a custom object with id, title, body and published flag
+# 'post' query returns a post
+
+# operation argument are attached at the right of the query name as if it was a function
+
+# the 'users' query returns an array of the 'User' custom type that matches the 'User' type definition
+# and it accepts a query string (optional)
+
+# the 'posts' query returns an array of 'Post' custom types and accepts an optional query string
+
+# many posts are associated with one user: to associate a post with a user, declare a new field in the 
+# Post type definition which will be of type User
+
+# the 'User' type definiton has now a 'posts' fields which will hold an array of Posts that were created by a user
+
+# the 'Comment' type definition with id and text required fields
+# added a 'comments' query which returns an array of comment custom types
+
+# added to the 'Comment' type an 'author' field that holds the User that wrote such Comment
+# added to the 'User' type a 'comments' field that holds an array of Comment objects that the User wrote
+
+# added to the 'Comment' type a 'post' field that holds the Post object that owns that comment
+# added to the 'Post' type a 'comments' field that holds the Comments related to that Post
+
+# type Mutation: declare all operations to create/update/delete data
+# createUser creates a user based on a name, email and age
+# createPost creates a post based on title, body, published flag and author id
+# createComment creates a comment based on the text, author id and post id
+
+# CreateUserInput input type that represents all scalar types required to add a new user
+# CreatePostInput input type that represents all scalar types required to add a new post
+# CreateCommentInput input type that represents all scalar types required to add a new comment
+
+# deleteUser to delete a user based on its id, also delete all posts made by it and its comments
+# deletePost to delete a post based on its id and all of its comments
+# deleteComment to delete a comment based on its id
+
+# updateUser to update user information by id
+# updatePost to update post information by id
+# updateComment to update comment information by id
+
+# UpdateUserInput the same as CreateUserInput but with all fields optional
+# UpdatePostInput the same as CreatePostInput but with all fields optional (except author)
+# UpdateCommentInput the same as CreateCommentInput but with all fields optional (except author and post)
+
+# type Subscription: setup subscriptions
+# count subscription returns an integer
+
+# comments to listen for comments in a particular post
+# post to listen for newly created posts
+
+# PostSubscriptionPayload as a type that contains the post and the mutation operation
+# CommentSubscriptionPayload as a type that contains the comment and the mutation operation
+type Query {
+    users(query: String): [User!]!
+    posts(query: String): [Post!]!
+    comments: [Comment!]!
+    me: User!
+    post: Post!
+}
+
+type Mutation {
+    createUser(data: CreateUserInput!): User!
+    createPost(data: CreatePostInput!): Post!
+    createComment(data: CreateCommentInput!): Comment!
+    deleteUser(id: ID!): User!
+    deletePost(id: ID!): Post!
+    deleteComment(id: ID!): Comment!
+    updateUser(id: ID!, data: UpdateUserInput!): User!
+    updatePost(id: ID!, data: UpdatePostInput!): Post!
+    updateComment(id: ID!, data: UpdateCommentInput!): Comment!
+}
+
+type Subscription {
+    comment(postId: ID!): CommentSubscriptionPayload!
+    post: PostSubscriptionPayload!
+}
+
+input CreateUserInput {
+    name: String!
+    email: String!
+    age: Int
+}
+
+input CreatePostInput {
+    title: String!
+    body: String!
+    published: Boolean!
+    author: ID!
+}
+
+input CreateCommentInput {
+    text: String!
+    author: ID!
+    post: ID!
+}
+
+input UpdateUserInput {
+    name: String
+    email: String
+    age: Int
+}
+
+input UpdatePostInput {
+    title: String
+    body: String
+    published: Boolean
+}
+
+input UpdateCommentInput {
+    text: String
+}
+
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    age: Int
+    posts: [Post!]!
+    comments: [Comment!]!
+}
+
+type Post {
+    id: ID!
+    title: String!
+    body: String!
+    published: Boolean!
+    author: User!
+    comments: [Comment!]!
+}
+
+type Comment {
+    id: ID!
+    text: String!
+    author: User!
+    post: Post!
+}
+
+enum MutationType {
+    CREATED
+    UPDATED
+    DELETED
+}
+
+type PostSubscriptionPayload {
+    mutation: MutationType!
+    data: Post!
+}
+
+type CommentSubscriptionPayload {
+    mutation: MutationType!
+    data: Comment!
+}

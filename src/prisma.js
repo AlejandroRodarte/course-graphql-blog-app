@@ -24,9 +24,50 @@ const prisma = new Prisma({
 
 // for example, here we access the user posts and its comments as if we were typing the query on the Playground
 // we use JSON.stringify() to impede console.log() to hide nested JSON data
-prisma.query.users(null, '{ id name posts { id title comments { id text } } }')
-    .then(data => console.log(JSON.stringify(data, undefined, 2)));
+// prisma.query.users(null, '{ id name posts { id title comments { id text } } }')
+//     .then(data => console.log(JSON.stringify(data, undefined, 2)));
 
 // getting all comments with their author information
-prisma.query.comments(null, '{ id text author { id name } }')
-    .then(data => console.log(JSON.stringify(data, undefined, 2)));
+// prisma.query.comments(null, '{ id text author { id name } }')
+//     .then(data => console.log(JSON.stringify(data, undefined, 2)));
+
+
+// Prisma mutations
+// operation arguments: object very similar to what we would type out in the GraphQL Playground
+// selection set: we want all the post scalar fields
+// on the Promise resolve, we can return another Promise to chain a query after the mutation is done
+// prisma.mutation
+//     .createPost({
+//         data: {
+//             title: "My pet Lola is so amazing.",
+//             body: "She is so awesome.",
+//             published: false,
+//             author: {
+//                 connect: {
+//                     id: "ck039vk6500cx0724zjkhxjaj"
+//                 }
+//             }
+//         }
+//     }, '{ id title body published }')
+//     .then(data => {
+//         console.log(data);
+//         return prisma.query.users(null, '{ id name posts { id title } }');
+//     })
+//     .then(data => console.log(JSON.stringify(data, undefined, 2)));
+
+// challenge: update a post and then fetch all posts
+prisma.mutation
+    .updatePost({
+        data: {
+            body: "She is gorgeous.",
+            published: true
+        },
+        where: {
+            id: "ck03gjy4h00dv0724clq6vtuh"
+        }
+    }, '{ id title body published }')
+    .then(data => {
+        console.log(data);
+        return prisma.query.posts(null, '{ id title body published }')
+    })
+    .then(data => console.log(data));

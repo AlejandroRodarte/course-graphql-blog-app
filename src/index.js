@@ -7,6 +7,9 @@ import User from './resolvers/User';
 import Post from './resolvers/Post';
 import Comment from './resolvers/Comment';
 
+// run the prisma.js script
+import './prisma';
+
 // we publisher-subscriber instance
 const pubsub = new PubSub();
 

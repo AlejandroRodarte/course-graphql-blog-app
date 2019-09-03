@@ -1,19 +1,34 @@
 # user: id, name, email and create/update timestamps
+# also, posts by that user and comments written by that user
 type User {
   id: ID! @id
   name: String!
   email: String! @unique
   posts: [Post!]!
+  comments: [Comment!]!
   createdAt: DateTime! @createdAt
   updatedAt: DateTime! @updatedAt
 }
 
+# post: id, title, body, published flag, author reference, comments on that post
+# and timestamps
 type Post {
   id: ID! @id
   title: String!
   body: String!
   published: Boolean!
   author: User!
+  comments: [Comment!]!
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+# comment: id, text, author of comment, post that owns the comment and timestamps
+type Comment {
+  id: ID! @id
+  text: String!
+  author: User!
+  post: Post!
   createdAt: DateTime! @createdAt
   updatedAt: DateTime! @updatedAt
 }

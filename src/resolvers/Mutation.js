@@ -28,46 +28,25 @@ const Mutation = {
     },
 
     // create a new comment
-    createComment(parent, args, { db, pubsub }, info) {
+    createComment(parent, args, { db, pubsub, prisma }, info) {
 
-        // check if user exists
-        const userExists = db.users.some(user => user.id === args.data.author);
-
-        // user does not exist: throw error
-        if (!userExists) {
-            throw new Error('Attempted to add a new comment to a non-existent user.')
-        }
-
-        // check if post exists and is published
-        const postAvailable = db.posts.some(post => (post.id === args.data.post) && (post.published === true));
-
-        // post does not exist or is not published: throw error
-        if (!postAvailable) {
-            throw new Error('Attempted to add a new comment to a non-existent or unpublished post.');
-        }
-
-        // create new comment
-        const comment = {
-            id: uuidv4(),
-            ...args.data
-        };
-
-        // add the new comment
-        db.comments.push(comment);
-
-        // publish the new comment object on the channel that belong to a particular post id
-        // example: subscribe to post 12; channel name: 'comment 12'
-        // when a comment in post 12 is made, we publish the comment to channel 'comment 12'
-        // now inform about the mutation operation (this comment was created)
-        pubsub.publish(`comment ${args.data.post}`, { 
-            comment: {
-                mutation: 'CREATED',
-                data: comment
+        // call the correct mutation method, search for the Prisma API docs to pass the
+        // correct operation arguments format
+        return prisma.mutation.createComment({
+            data: {
+                text: args.data.text,
+                author: {
+                    connect: {
+                        id: args.data.author
+                    }
+                },
+                post: {
+                    connect: {
+                        id: args.data.post
+                    }
+                }
             }
-        });
-
-        // response
-        return comment;
+        }, info);
 
     },
 
@@ -87,63 +66,26 @@ const Mutation = {
     },
 
     // delete a post by id
-    deletePost(parent, args, { db, pubsub }, info) {
+    deletePost(parent, args, { db, pubsub, prisma }, info) {
 
-        // search for the post
-        const postIndex = db.posts.findIndex(post => post.id === args.id);
-
-        // post not found: throw error
-        if (postIndex === -1) {
-            throw new Error('Attempted to delete a non-existent post.');
-        }
-        
-        // delete and get deleted post (array destructuring)
-        const [post] = db.posts.splice(postIndex, 1);
-
-        // filter our comments that were not related to that post
-        db.comments = db.comments.filter(comment => comment.post !== args.id);
-
-        // if the deleted post was published, publish the post providing information
-        // about the mutation type (the post was deleted)
-        if (post.published) {
-            pubsub.publish('post', {
-                post: {
-                    mutation: 'DELETED',
-                    data: post
-                }
-            });
-        }
-
-        // return deleted post
-        return post;
+        // call the correct mutation method
+        return prisma.mutation.deletePost({
+            where: {
+                id: args.id
+            }
+        }, info);
 
     },
 
     // delete comment by id
-    deleteComment(parent, args, { db, pubsub }, info) {
+    deleteComment(parent, args, { db, pubsub, prisma }, info) {
 
-        // search for the comment
-        const commentIndex = db.comments.findIndex(comment => comment.id === args.id);
-
-        // comment not found; throw error
-        if (commentIndex === -1) {
-            throw new Error('Attempted to delete a non-existent comment.');
-        }
-
-        // delete the comment and get it back
-        const [comment] = db.comments.splice(commentIndex, 1);
-
-        // use the deleted comment's post id to inform through the correct channel
-        // the deleted comment content and the mutation operation (this comment was deleted)
-        pubsub.publish(`comment ${comment.post}`, {
-            comment: {
-                mutation: 'DELETED',
-                data: comment
+        // call the correct mutation method
+        return prisma.mutation.deleteComment({
+            where: {
+                id: args.id
             }
-        });
-
-        // return the deleted comment
-        return comment;
+        }, info);
 
     },
 
@@ -161,105 +103,28 @@ const Mutation = {
     },
 
     // update post
-    updatePost(parent, args, { db, pubsub }, info) {
+    updatePost(parent, args, { db, pubsub, prisma }, info) {
 
-        const { id, data } = args;
-
-        // find post
-        const post = db.posts.find(post => post.id === id);
-
-        // a copy of the original post
-        const originalPost = { ...post };
-
-        // not found: throw error
-        if (!post) {
-            throw new Error('Attempted to update a non-existend post.');
-        }
-
-        // title input is a string
-        if (typeof data.title === 'string') {
-            post.title = data.title;
-        }
-
-        // body input is a string
-        if (typeof data.body === 'string') {
-            post.body = data.body;
-        }
-
-        // published is a boolean
-        if (typeof data.published === 'boolean') {
-
-            post.published = data.published;
-
-            let mutation = '';
-            let finalPost;
-
-            if (originalPost.published && !post.published) {
-
-                // first scenario: post was originally published and it was edited to
-                // be unpublished: mark the original post as deleted
-                mutation = 'DELETED';
-                finalPost = originalPost;
-
-            } else if (!originalPost.published && post.published) {
-
-                // second scenario: post was originally unpublihsed and it was edited to
-                // be published: mark the new post as created
-                mutation = 'CREATED';
-                finalPost = post;
-
-            } else if (post.published) {
-
-                // third scenario: the post was mantained as published: mark the updated post
-                // as updated
-                mutation = 'UPDATED'
-                finalPost = post;
-
+        // call the correct mutation method
+        return prisma.mutation.updatePost({
+            data: args.data,
+            where: {
+                id: args.id
             }
-
-            // publish the final mutation and post value from the if-else statement
-            pubsub.publish('post', {
-                post: {
-                    mutation,
-                    data: finalPost
-                }
-            });
-
-        }
-
-        // return updated post
-        return post;
+        }, info);
 
     },
 
     // update a comment
-    updateComment(parent, args, { db, pubsub }, info) {
+    updateComment(parent, args, { db, pubsub, prisma }, info) {
 
-        const { id, data } = args;
-
-        // find comment
-        const comment = db.comments.find(comment => comment.id === id);
-
-        // not found: throw error
-        if (!comment) {
-            throw new Error('Attempted to update a non-existent comment.');
-        }
-
-        // text input is a string
-        if (typeof data.text === 'string') {
-            comment.text = data.text;
-        }
-
-        // inform through the correct channel about the updated comment and the
-        // mutation operation (this comment was updated)
-        pubsub.publish(`comment ${comment.post}`, {
-            comment: {
-                mutation: 'UPDATED',
-                data: comment
+        // call the correct mutation method
+        return prisma.mutation.updateComment({
+            data: args.data,
+            where: {
+                id: args.id
             }
-        });
-
-        return comment;
+        }, info);
 
     }
 

@@ -57,9 +57,9 @@ const Query = {
 
     },
 
-    // the 'comments' query resolver: return all comments (part 1)
-    comments(parent, args, { db }, info) {
-        return db.comments;
+    // the 'comments' query resolver: return all comments from the database with prisma
+    comments(parent, args, { db, prisma }, info) {
+        return prisma.query.comments(null, info);
     },
 
     me() {

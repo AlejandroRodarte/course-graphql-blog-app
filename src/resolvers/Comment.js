@@ -1,15 +1,8 @@
 // resolver when accessing User given a Comment: find User that matches its primary key (id) with the comments id (parent)
+
+// since prisma-binding methods support for relational data selection through the 'info' object argument
+// there is no need to declare by ourselves the resolvers
 const Comment = {
-
-    author(parent, args, { db }, info) {
-        return db.users.find(user => user.id === parent.author);
-    },
-
-    // resolver when accessing a Post given a Comment, search for the post where its primary key (id) matches the parent 'post'
-    // foreign key (Comment)
-    post(parent, args, { db }, info) {
-        return db.posts.find(post => post.id === parent.post);
-    }
 
 };
 

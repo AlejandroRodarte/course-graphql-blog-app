@@ -4,27 +4,18 @@ import uuidv4 from 'uuid';
 const Mutation = {
 
     // create a new user
-    createUser(parent, args, { db }, info) {
+    async createUser(parent, args, { db, prisma }, info) {
 
-        // check if email is already taken
-        const emailTaken = db.users.some(user => user.email === args.data.email);
+        // use prisma.exists to check if there is a user with that email
+        const emailTaken = await prisma.exists.User({ email: args.data.email });
 
-        // if so, throw error
+        // email taken: throw error
         if (emailTaken) {
-            throw new Error('Email is already in use.');
+            throw new Error('Email is already taken.');
         }
 
-        // create new user: generate a new random id
-        const user = {
-            id: uuidv4(),
-            ...args.data
-        };
-
-        // add the user (in array)
-        db.users.push(user);
-
-        // response
-        return user;
+        // return promised user after creating, passing info as selection set from client
+        return prisma.mutation.createUser({ data: args.data }, info);
 
     },
 
@@ -109,40 +100,25 @@ const Mutation = {
     },
 
     // delete a user by id (and all its posts and comments)
-    deleteUser(parent, args, { db }, info) {
+    async deleteUser(parent, args, { db, prisma }, info) {
 
-        // find user
-        const userIndex = db.users.findIndex(user => user.id === args.id);
+        // check if the given user id is valid
+        const userExists = await prisma.exists.User({ id: args.id });
 
-        // user not found: throw error
-        if (userIndex === -1) {
-            throw new Error('Attempted to delete non-existent user.')
+        // user does not exist: throw error
+        if (!userExists) {
+            throw new Error('Attempted to delete non-existent user.');
         }
 
-        // delete the user: get deleted user thanks to how splice() works
-        const deletedUsers = db.users.splice(userIndex, 1);
-        
-        // filter posts
-        db.posts = db.posts.filter(post => {
-
-            // check if the post was made by that user
-            const match = post.author === args.id;
-
-            // filter out all comments that were related to that post
-            if (match) {
-                db.comments = db.comments.filter(comment => comment.post !== post.id);
+        // return deleted user promise, read Prisma API docs to know how to structure
+        // the operation arguments object
+        // note: cascade deleting was already configured when configuring the Prisma datamode.graphql file
+        // with the @relation directive
+        return prisma.mutation.deleteUser({
+            where: {
+                id: args.id
             }
-
-            // filter all posts that were not made by that user
-            return !match;
-
-        });
-
-        // delete all comments written by that user
-        db.comments = db.comments.filter(comment => comment.author !== args.id);
-
-        // return the deleted user
-        return deletedUsers[0];
+        }, info);
 
     },
 

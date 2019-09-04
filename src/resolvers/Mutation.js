@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // our mutation handlers (resolvers)
 const Mutation = {
@@ -16,12 +17,19 @@ const Mutation = {
 
         // return promised user after creating, passing info as selection set from client
         // overwriting the original password field with the hashed password
-        return prisma.mutation.createUser({ 
+        // removed the 'info' selection set so prisma-binding returns just scalar fields related to the user
+        const user = await prisma.mutation.createUser({ 
             data: {
                 ...args.data,
                 password
             }
-        }, info);
+        });
+
+        // return the created user and its auth token
+        return {
+            user,
+            token: jwt.sign({ userId: user.id }, 'my-super-secret')
+        };
 
     },
 

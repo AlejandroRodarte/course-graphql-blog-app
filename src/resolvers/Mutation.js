@@ -150,6 +150,40 @@ const Mutation = {
             }
         }, info);
 
+    },
+
+    // the login mutation
+    async login(parent, { data }, { prisma }, info) {
+
+        // deconstruct email and password
+        const { email, password } = data;
+
+        // query for user based on email (no info arg to return only scalar fields)
+        const user = await prisma.query.user({
+            where: {
+                email
+            }
+        });
+
+        // user not found: throw error
+        if (!user) {
+            throw new Error('Authentication failed.');
+        }
+
+        // check for matching passwords
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        // passwords do not match: throw error
+        if (!isMatch) {
+            throw new Error('Authentication failed.');
+        }
+
+        // return found user info and a token for that user
+        return {
+            user,
+            token: jwt.sign({ userId: user.id }, 'my-super-secret')
+        }
+
     }
 
 };

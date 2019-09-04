@@ -57,7 +57,10 @@ const Mutation = {
     },
 
     // create a new comment
-    createComment(parent, args, { db, pubsub, prisma }, info) {
+    createComment(parent, args, { db, pubsub, prisma, request }, info) {
+
+        // get id of logged in user
+        const userId = getUserId(request);
 
         // call the correct mutation method, search for the Prisma API docs to pass the
         // correct operation arguments format
@@ -66,7 +69,7 @@ const Mutation = {
                 text: args.data.text,
                 author: {
                     connect: {
-                        id: args.data.author
+                        id: userId
                     }
                 },
                 post: {
@@ -128,7 +131,23 @@ const Mutation = {
     },
 
     // delete comment by id
-    deleteComment(parent, args, { db, pubsub, prisma }, info) {
+    async deleteComment(parent, args, { db, pubsub, prisma, request }, info) {
+
+        // get logged in user id
+        const userId = getUserId(request);
+
+        // find comment that the user made
+        const commentExists = await prisma.exists.Comment({
+            id: args.id,
+            author: {
+                id: userId
+            }
+        });
+
+        // comment not found: throw error
+        if (!commentExists) {
+            throw new Error('Permission to delete denied');
+        }
 
         // call the correct mutation method
         return prisma.mutation.deleteComment({
@@ -156,7 +175,23 @@ const Mutation = {
     },
 
     // update post
-    updatePost(parent, args, { db, pubsub, prisma }, info) {
+    async updatePost(parent, args, { db, pubsub, prisma, request }, info) {
+
+        // get logged in user id
+        const userId = getUserId(request);
+
+        // check if post was one that the user created
+        const postExists = await prisma.exists.Post({
+            id: args.id,
+            author: {
+                id: userId
+            }
+        });
+
+        // post does not exist: throw error
+        if (!postExists) {
+            throw new Error('Permission to update denied.');
+        }
 
         // call the correct mutation method
         return prisma.mutation.updatePost({
@@ -169,7 +204,23 @@ const Mutation = {
     },
 
     // update a comment
-    updateComment(parent, args, { db, pubsub, prisma }, info) {
+    async updateComment(parent, args, { db, pubsub, prisma, request }, info) {
+
+        // get logged in user id
+        const userId = getUserId(request);
+
+        // find comment written by user
+        const commentExists = await prisma.exists.Comment({
+            id: args.id,
+            author: {
+                id: userId
+            }
+        });
+
+        // comment does not exist: throw error
+        if (!commentExists) {
+            throw new Error('Permission to delete denied');
+        }
 
         // call the correct mutation method
         return prisma.mutation.updateComment({

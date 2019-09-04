@@ -1,3 +1,6 @@
+import getUserId from '../utils/getUserId';
+import { unusedVariableMessage } from 'graphql/validation/rules/NoUnusedVariables';
+
 const Query = {
 
     // the 'users' query resolver
@@ -62,22 +65,63 @@ const Query = {
         return prisma.query.comments(null, info);
     },
 
-    me() {
-        return {
-            id: '123890',
-            name: 'Alejandro',
-            email: 'alejandrorodarte1@gmail.com',
-            age: 15
-        };
+    // get logged in user information
+    async me(parent, args, { prisma, request }, info) {
+
+        // get logged in user id
+        const userId = getUserId(request);
+
+        // find logged in user by id
+        const user = await prisma.query.user({
+            where: {
+                id: userId
+            }
+        });
+
+        // return the user
+        return user;
+
     },
 
-    post() {
-        return {
-            id: 'abcxyz',
-            title: 'My Post Title',
-            body: 'My Post Description',
-            published: false
-        };
+    // get post
+    async post(parent, args, { prisma, request }, info) {
+
+        // get user id with authentication not required (false)
+        // this function will attempt to find the authorization header
+        // and if it does not find it, instead of throwing an error it will return null
+        const userId = getUserId(request, false);
+
+        // using 'posts' query since it has more querying options than the 'post' query
+        // find post by id (just one) and check if that only post is either published or is one
+        // created by the logged in user
+
+        // if the value at this point for userId is 'null' (we do not have a logged in user), 
+        // prisma will make false this 'author' search criteria, making the 'published' criteria the only possible to one
+        // to make the OR condition true
+        const posts = await prisma.query.posts({
+            where: {
+                id: args.id,
+                OR: [
+                    {
+                        published: true
+                    },
+                    {
+                        author: {
+                            id: userId
+                        }
+                    }
+                ]
+            }
+        }, info);
+
+        // check if we did not find a post: throw error
+        if (posts.length === 0) {
+            throw new Error('Post not found.');
+        }
+
+        // return the only post we found
+        return posts[0];
+
     }
 
 };

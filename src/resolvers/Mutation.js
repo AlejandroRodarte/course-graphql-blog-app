@@ -80,22 +80,43 @@ const Mutation = {
     },
 
     // delete a user by id (and all its posts and comments)
-    async deleteUser(parent, args, { db, prisma }, info) {
+    async deleteUser(parent, args, { db, prisma, request }, info) {
+
+        // get logged in user id
+        const userId = getUserId(request);
 
         // return deleted user promise, read Prisma API docs to know how to structure
         // the operation arguments object
         // note: cascade deleting was already configured when configuring the Prisma datamode.graphql file
         // with the @relation directive
+
+        // delete the logged in user by its id
         return prisma.mutation.deleteUser({
             where: {
-                id: args.id
+                id: userId
             }
         }, info);
 
     },
 
     // delete a post by id
-    deletePost(parent, args, { db, pubsub, prisma }, info) {
+    async deletePost(parent, args, { db, pubsub, prisma, request }, info) {
+
+        // get decoded id of logged in user
+        const userId = getUserId(request);
+
+        // check if the logged in user is attempting to delete a post he/she wrote
+        const postExists = await prisma.exists.Post({
+            id: args.id,
+            author: {
+                id: userId
+            }
+        });
+
+        // not authorized: throw error
+        if (!postExists) {
+            throw new Error('Permission to delete denied.');
+        }
 
         // call the correct mutation method
         return prisma.mutation.deletePost({
@@ -119,13 +140,16 @@ const Mutation = {
     },
 
     // update user by id
-    async updateUser(parent, args, { db, prisma }, info) {
+    async updateUser(parent, args, { db, prisma, request }, info) {
 
-        // make the call to the correct prisma method
+        // get the decoded user id through the auth token inside the request
+        const userId = getUserId(request);
+
+        // make the call to the correct prisma method; update the logged in user data
         return prisma.mutation.updateUser({ 
             data: args.data,
             where: {
-                id: args.id
+                id: userId
             }
         }, info);
 

@@ -1,5 +1,4 @@
 import getUserId from '../utils/getUserId';
-import { unusedVariableMessage } from 'graphql/validation/rules/NoUnusedVariables';
 
 const Query = {
 
@@ -39,21 +38,23 @@ const Query = {
     // use prisma-binding to query for all psots in the database
     posts(parent, args, { db, prisma }, info) {
 
-        const opArgs = {};
+        const opArgs = {
+            where: {
+                published: true
+            }
+        };
 
         // if query is present: set a where property and check if search string
         // matches either the post title or body for all records (for more info, check the Prisma API docs!)
         if (args.query) {
-            opArgs.where = {
-                OR: [
-                    {
-                        title_contains: args.query
-                    },
-                    {
-                        body_contains: args.query
-                    }
-                ]
-            }
+            opArgs.where.OR = [
+                {
+                    title_contains: args.query
+                },
+                {
+                    body_contains: args.query
+                }
+            ]
         }
 
         return prisma.query.posts(opArgs, info);
@@ -83,7 +84,7 @@ const Query = {
 
     },
 
-    // get post
+    // get public posts
     async post(parent, args, { prisma, request }, info) {
 
         // get user id with authentication not required (false)
@@ -121,6 +122,38 @@ const Query = {
 
         // return the only post we found
         return posts[0];
+
+    },
+
+    // get private posts
+    myPosts(parent, args, { prisma, request }, info) {
+
+        // get user id through auth token
+        const userId = getUserId(request);
+
+        // set operation argument: posts that are made by the particular logged in user
+        const opArgs = {
+            where: {
+                author: {
+                    id: userId
+                }
+            }
+        };
+
+        // add additional search criteria if the optional query is provided 
+        if (args.query) {
+            opArgs.where.OR = [
+                {
+                    title_contains: args.query
+                },
+                {
+                    body_contains: args.query
+                }
+            ]
+        }
+
+        // return posts that match the operation arguments
+        return prisma.query.posts(opArgs, info);
 
     }
 

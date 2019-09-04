@@ -60,6 +60,8 @@
 
 # PostSubscriptionPayload as a type that contains the post and the mutation operation
 # CommentSubscriptionPayload as a type that contains the comment and the mutation operation
+
+# added password to user
 type Query {
     users(query: String): [User!]!
     posts(query: String): [Post!]!
@@ -122,6 +124,7 @@ type User {
     id: ID!
     name: String!
     email: String!
+    password: String!
     posts: [Post!]!
     comments: [Comment!]!
 }

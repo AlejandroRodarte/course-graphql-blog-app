@@ -3,10 +3,13 @@
 
 # when a user is deleted, cascade delete all related posts
 # when a user is deleted, cascade delete all related comments
+
+# added password to user
 type User {
   id: ID! @id
   name: String!
   email: String! @unique
+  password: String!
   posts: [Post!]! @relation(name: "PostToUser", onDelete: CASCADE)
   comments: [Comment!]! @relation(name: "CommentToUser", onDelete: CASCADE)
   createdAt: DateTime! @createdAt

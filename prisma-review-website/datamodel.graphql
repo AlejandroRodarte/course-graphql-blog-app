@@ -1,0 +1,34 @@
+# user, id an unique username
+# has associated a list of reviews which should be deleted when user is deleted
+type User {
+  id: ID! @id
+  username: String! @unique
+  reviews: [Review!]! @relation(name: "ReviewToUser", onDelete: CASCADE)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+# book, id, title, author and isbn
+# has associated a list of reviews which should be deleted when book is deleted
+type Book {
+  id: ID! @id
+  title: String!
+  author: String!
+  isbn: String!
+  reviews: [Review!]! @relation(name: "ReviewToBook", onDelete: CASCADE)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+# review, id, text and rating
+# has an author which should not be deleted when review is deleted
+# has a book which should not be deleted when review is deleted
+type Review {
+  id: ID! @id
+  text: String
+  rating: Int!
+  author: User! @relation(name: "ReviewToUser", onDelete: SET_NULL)
+  book: Book! @relation(name: "ReviewToBook", onDelete: SET_NULL)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}

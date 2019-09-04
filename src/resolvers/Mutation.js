@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import getUserId from '../utils/getUserId';
+
 // our mutation handlers (resolvers)
 const Mutation = {
 
@@ -34,16 +36,19 @@ const Mutation = {
     },
 
     // create a post
-    createPost(parent, args, { db, pubsub, prisma }, info) {
+    createPost(parent, args, { db, pubsub, prisma, request }, info) {
+
+        // get the decoded user id from the auth token
+        const userId = getUserId(request);
 
         // create a post: spread the args.data key/value pairs but override the 'author' one
-        // to match the Prisma API needs
+        // to match the Prisma API needs; set it to the decoded user id
         return prisma.mutation.createPost({
             data: {
                 ...args.data,
                 author: {
                     connect: {
-                        id: args.data.author
+                        id: userId
                     }
                 }
             }

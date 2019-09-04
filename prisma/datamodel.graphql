@@ -1,34 +1,43 @@
 # user: id, name, email and create/update timestamps
 # also, posts by that user and comments written by that user
+
+# when a user is deleted, cascade delete all related posts
+# when a user is deleted, cascade delete all related comments
 type User {
   id: ID! @id
   name: String!
   email: String! @unique
-  posts: [Post!]!
-  comments: [Comment!]!
+  posts: [Post!]! @relation(name: "PostToUser", onDelete: CASCADE)
+  comments: [Comment!]! @relation(name: "CommentToUser", onDelete: CASCADE)
   createdAt: DateTime! @createdAt
   updatedAt: DateTime! @updatedAt
 }
 
 # post: id, title, body, published flag, author reference, comments on that post
 # and timestamps
+
+# when a post is deleted, do not delete related user, just set to null
+# when a post is deleted, delete all related comments
 type Post {
   id: ID! @id
   title: String!
   body: String!
   published: Boolean!
-  author: User!
-  comments: [Comment!]!
+  author: User! @relation(name: "PostToUser", onDelete: SET_NULL)
+  comments: [Comment!]! @relation(name: "CommentToPost", onDelete: CASCADE)
   createdAt: DateTime! @createdAt
   updatedAt: DateTime! @updatedAt
 }
 
 # comment: id, text, author of comment, post that owns the comment and timestamps
+
+# when a comment is deleted, do not delete related user, just set to null
+# when a comment is deleted, do not delete related post, just set to null 
 type Comment {
   id: ID! @id
   text: String!
-  author: User!
-  post: Post!
+  author: User! @relation(name: "CommentToUser", onDelete: SET_NULL)
+  post: Post! @relation(name: "CommentToPost", onDelete: SET_NULL)
   createdAt: DateTime! @createdAt
   updatedAt: DateTime! @updatedAt
 }

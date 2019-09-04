@@ -1,12 +1,28 @@
-import uuidv4 from 'uuid';
+import bcrypt from 'bcryptjs';
 
 // our mutation handlers (resolvers)
 const Mutation = {
 
     // create a new user
     async createUser(parent, args, { db, prisma }, info) {
+
+        // validate password: must be 8+ characters long
+        if (args.data.password.length < 8) {
+            throw new Error('Password must be of 8 characters minimum.');
+        }
+
+        // hashing the password with bcryptjs
+        const password = await bcrypt.hash(args.data.password, 10);
+
         // return promised user after creating, passing info as selection set from client
-        return prisma.mutation.createUser({ data: args.data }, info);
+        // overwriting the original password field with the hashed password
+        return prisma.mutation.createUser({ 
+            data: {
+                ...args.data,
+                password
+            }
+        }, info);
+
     },
 
     // create a post

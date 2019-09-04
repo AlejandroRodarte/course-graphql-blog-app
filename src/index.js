@@ -7,8 +7,9 @@ import User from './resolvers/User';
 import Post from './resolvers/Post';
 import Comment from './resolvers/Comment';
 
-// run the prisma.js script
-import './prisma';
+// import the prisma-binding instance to use its methods
+// (prisma.query, prisma.mutation, prisma.subscription, prisma.exists)
+import prisma from './prisma';
 
 // we publisher-subscriber instance
 const pubsub = new PubSub();
@@ -29,7 +30,8 @@ const server = new GraphQLServer({
     },
     context: {
         db,
-        pubsub
+        pubsub,
+        prisma
     }
 });
 

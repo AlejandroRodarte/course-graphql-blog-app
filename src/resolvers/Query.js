@@ -1,31 +1,18 @@
 const Query = {
 
     // the 'users' query resolver
-    users(parent, args, { db }, info) {
-
-        // no query: return all users
-        if (!args.query) {
-            return db.users;
-        }
-
-        // query: search for matches of query string with the user name and return filtered array
-        return db.users.filter(user => user.name.toLowerCase().includes(args.query.toLowerCase()));
-
+    // from the context, get the prisma-binding object and query for the users from the database
+    // the 'info' argument contains the original operation incoming from the client, so we pass it as the selection set
+    // as an object (also allowed besides the string format)
+    // we can return promises in the resolver methods
+    users(parent, args, { db, prisma }, info) {
+        return prisma.query.users(null, info);
     },
 
     // the 'posts' query resolver
-    posts(parent, args, { db }, info) {
-
-        // no query: return all posts
-        if (!args.query) {
-            return db.posts;
-        }
-
-        // query: return all posts that match the search query either in the post title or in the post body
-        return db.posts.filter(post => {
-            return post.title.toLowerCase().includes(args.query.toLowerCase()) || post.body.toLowerCase().includes(args.query.toLowerCase());
-        });
-
+    // use prisma-binding to query for all psots in the database
+    posts(parent, args, { db, prisma }, info) {
+        return prisma.query.posts(null, info);
     },
 
     // the 'comments' query resolver: return all comments (part 1)

@@ -5,53 +5,25 @@ const Mutation = {
 
     // create a new user
     async createUser(parent, args, { db, prisma }, info) {
-
-        // use prisma.exists to check if there is a user with that email
-        const emailTaken = await prisma.exists.User({ email: args.data.email });
-
-        // email taken: throw error
-        if (emailTaken) {
-            throw new Error('Email is already taken.');
-        }
-
         // return promised user after creating, passing info as selection set from client
         return prisma.mutation.createUser({ data: args.data }, info);
-
     },
 
     // create a post
-    createPost(parent, args, { db, pubsub }, info) {
+    createPost(parent, args, { db, pubsub, prisma }, info) {
 
-        // check if user exists given the author id through the arguments
-        const userExists = db.users.some(user => user.id === args.data.author);
-
-        // user does not exist: throw error
-        if (!userExists) {
-            throw new Error('Attempted to add a new post to a non-existent user.');
-        }
-
-        // create a new post: generate a random id
-        const post = {
-            id: uuidv4(),
-            ...args.data
-        };
-
-        // push the new post
-        db.posts.push(post);
-
-        // if post is published, publish the post through the 'post' channel
-        // inform about the mutation operation: this post was created
-        if (args.data.published) {
-            pubsub.publish('post', {
-                post: {
-                    mutation: 'CREATED', 
-                    data: post 
+        // create a post: spread the args.data key/value pairs but override the 'author' one
+        // to match the Prisma API needs
+        return prisma.mutation.createPost({
+            data: {
+                ...args.data,
+                author: {
+                    connect: {
+                        id: args.data.author
+                    }
                 }
-            });
-        }
-
-        // response
-        return post;
+            }
+        }, info);
 
     },
 
@@ -101,14 +73,6 @@ const Mutation = {
 
     // delete a user by id (and all its posts and comments)
     async deleteUser(parent, args, { db, prisma }, info) {
-
-        // check if the given user id is valid
-        const userExists = await prisma.exists.User({ id: args.id });
-
-        // user does not exist: throw error
-        if (!userExists) {
-            throw new Error('Attempted to delete non-existent user.');
-        }
 
         // return deleted user promise, read Prisma API docs to know how to structure
         // the operation arguments object
@@ -184,46 +148,15 @@ const Mutation = {
     },
 
     // update user by id
-    updateUser(parent, args, { db }, info) {
+    async updateUser(parent, args, { db, prisma }, info) {
 
-        // destructure inputs
-        const { id, data } = args;
-
-        // find user
-        const user = db.users.find(user => user.id === id);
-
-        // no user found: throw error
-        if (!user) {
-            throw new Error('Attempted to update a user that does not exist.');
-        }
-
-        // check if email is a string
-        if (typeof data.email === 'string') {
-
-            // check if email is taken
-            const emailTaken = db.users.some(user => user.email === data.email);
-
-            // email taken: throw error
-            if (emailTaken) {
-                throw new Error('Email is already being in use.');
+        // make the call to the correct prisma method
+        return prisma.mutation.updateUser({ 
+            data: args.data,
+            where: {
+                id: args.id
             }
-
-            // assign property
-            user.email = data.email;
-
-        }
-
-        // check if name is a string and assign value
-        if (typeof data.name === 'string') {
-            user.name = data.name;
-        }
-
-        // check if age is either a number or null
-        if (typeof data.age === 'number' || data.age === null) {
-            user.age = data.age;
-        }
-
-        return user;
+        }, info);
 
     },
 

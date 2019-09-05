@@ -1,11 +1,6 @@
 import { GraphQLServer, PubSub } from 'graphql-yoga';
 import db from './db';
-import Query from './resolvers/Query';
-import Mutation from './resolvers/Mutation';
-import Subscription from './resolvers/Subscription';
-import User from './resolvers/User';
-import Post from './resolvers/Post';
-import Comment from './resolvers/Comment';
+import { resolvers, fragmentReplacements } from './resolvers/index';
 
 // import the prisma-binding instance to use its methods
 // (prisma.query, prisma.mutation, prisma.subscription, prisma.exists)
@@ -18,16 +13,11 @@ const pubsub = new PubSub();
 // typeDefs: pointer to the file that has our type definitions
 // resolvers: The imported resolvers from all the files
 // pass the publisher-subscriber utility in the context so we can share it between resolvers
+
+// make the GraphQLServer also use the declared fragments from our resolver definitions
 const server = new GraphQLServer({
     typeDefs: './src/schema.graphql',
-    resolvers: {
-        Query,
-        Mutation,
-        Subscription,
-        User,
-        Post,
-        Comment
-    },
+    resolvers,
     context(request) {
         return {
             db,
@@ -35,7 +25,8 @@ const server = new GraphQLServer({
             prisma,
             request
         }
-    }
+    },
+    fragmentReplacements
 });
 
 // kickstart the server (default port: 4000)

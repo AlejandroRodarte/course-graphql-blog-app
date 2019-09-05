@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
 import getUserId from '../utils/getUserId';
+import generateToken from '../utils/generateToken';
 
 // our mutation handlers (resolvers)
 const Mutation = {
@@ -27,10 +27,10 @@ const Mutation = {
             }
         });
 
-        // return the created user and its auth token
+        // return the created user and its auth token (with expiration date)
         return {
             user,
-            token: jwt.sign({ userId: user.id }, 'my-super-secret')
+            token: generateToken({ userId: user.id })
         };
 
     },
@@ -292,10 +292,10 @@ const Mutation = {
             throw new Error('Authentication failed.');
         }
 
-        // return found user info and a token for that user
+        // return found user info and a token for that user (with expiration date)
         return {
             user,
-            token: jwt.sign({ userId: user.id }, 'my-super-secret')
+            token: generateToken({ userId: user.id })
         }
 
     }

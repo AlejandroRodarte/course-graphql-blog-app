@@ -28,6 +28,26 @@ const User = {
 
     },
 
+    // password field resolver: only make available hashed password to logged in user
+    // the other password should not be accessed
+    password: {
+
+        fragment: 'fragment userId on User { id }',
+
+        resolve(parent, args, { prisma, request }, info) {
+
+            const userId = getUserId(request);
+    
+            if (userId && userId === parent.id) {
+                return parent.password;
+            } else {
+                return null;
+            }
+
+        }
+
+    },
+
     // posts resolver with fragments to request for additional info
     posts: {
 

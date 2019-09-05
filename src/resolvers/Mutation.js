@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 
 import getUserId from '../utils/getUserId';
 import generateToken from '../utils/generateToken';
+import hashPassword from '../utils/hashPassword';
 
 // our mutation handlers (resolvers)
 const Mutation = {
@@ -9,13 +10,8 @@ const Mutation = {
     // create a new user
     async createUser(parent, args, { db, prisma }, info) {
 
-        // validate password: must be 8+ characters long
-        if (args.data.password.length < 8) {
-            throw new Error('Password must be of 8 characters minimum.');
-        }
-
-        // hashing the password with bcryptjs
-        const password = await bcrypt.hash(args.data.password, 10);
+        // hash the password (also validate its length)
+        const password = await hashPassword(args.data.password);
 
         // return promised user after creating, passing info as selection set from client
         // overwriting the original password field with the hashed password
@@ -174,6 +170,11 @@ const Mutation = {
 
         // get the decoded user id through the auth token inside the request
         const userId = getUserId(request);
+
+        // if a password was provided, overwrite it with a hashed password
+        if (typeof args.data.password === 'string') {
+            args.data.password = await hashPassword(args.data.password);
+        }
 
         // make the call to the correct prisma method; update the logged in user data
         return prisma.mutation.updateUser({ 

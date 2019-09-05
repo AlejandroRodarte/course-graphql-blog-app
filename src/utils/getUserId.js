@@ -2,7 +2,9 @@ import jwt from 'jsonwebtoken';
 
 const getUserId = (request, requireAuth = true) => {
 
-    // get authorization header
+    // get authorization header: when making regular requests, the header live on request.request.headers.authorization
+    // however, since subscriptions rely on websockets, the headers live on other part of the request global object, they live in
+    // request.connection.context.authorization
     const rawHeader = request.request ? request.request.headers.authorization : request.connection.context.authorization;
 
     if (rawHeader) {

@@ -66,12 +66,12 @@
 # AuthPayload type returns a user and an auth token
 # now createUser returns AuthPayload
 type Query {
-    users(query: String): [User!]!
-    posts(query: String): [Post!]!
-    comments: [Comment!]!
+    users(query: String, first: Int, skip: Int, after: String): [User!]!
+    posts(query: String, first: Int, skip: Int, after: String): [Post!]!
+    comments(first: Int, skip: Int, after: String): [Comment!]!
     me: User!
     post(id: ID!): Post!
-    myPosts(query: String): [Post!]!
+    myPosts(query: String, first: Int, skip: Int, after: String): [Post!]!
 }
 
 type Mutation {

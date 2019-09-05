@@ -9,7 +9,12 @@ const Query = {
     // we can return promises in the resolver methods
     users(parent, args, { db, prisma }, info) {
 
-        const opArgs = {};
+        // set basic pagination with first and skip arguments
+        const opArgs = {
+            first: args.first,
+            skip: args.skip,
+            after: args.after
+        };
 
         // if a query exists
         if (args.query) {
@@ -39,7 +44,10 @@ const Query = {
         const opArgs = {
             where: {
                 published: true
-            }
+            },
+            first: args.first,
+            skip: args.skip,
+            after: args.after
         };
 
         // if query is present: set a where property and check if search string
@@ -61,7 +69,17 @@ const Query = {
 
     // the 'comments' query resolver: return all comments from the database with prisma
     comments(parent, args, { db, prisma }, info) {
-        return prisma.query.comments(null, info);
+
+        // apply filtering parameters
+        const opArgs = {
+            first: args.first,
+            skip: args.skip,
+            after: args.after
+        };
+
+        // get comments according to filter criteria and selection set
+        return prisma.query.comments(opArgs, info);
+
     },
 
     // get logged in user information
@@ -130,12 +148,16 @@ const Query = {
         const userId = getUserId(request);
 
         // set operation argument: posts that are made by the particular logged in user
+        // also set filtering arguments
         const opArgs = {
             where: {
                 author: {
                     id: userId
                 }
-            }
+            },
+            first: args.first,
+            skip: args.skip,
+            after: args.after
         };
 
         // add additional search criteria if the optional query is provided 

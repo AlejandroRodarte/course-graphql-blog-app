@@ -10,10 +10,12 @@ const Query = {
     users(parent, args, { db, prisma }, info) {
 
         // set basic pagination with first and skip arguments
+        // also setting sorting
         const opArgs = {
             first: args.first,
             skip: args.skip,
-            after: args.after
+            after: args.after,
+            orderBy: args.orderBy
         };
 
         // if a query exists
@@ -41,13 +43,15 @@ const Query = {
     posts(parent, args, { db, prisma }, info) {
 
         // fetch only posts that have been published
+        // set up pagination and sorting
         const opArgs = {
             where: {
                 published: true
             },
             first: args.first,
             skip: args.skip,
-            after: args.after
+            after: args.after,
+            orderBy: args.orderBy
         };
 
         // if query is present: set a where property and check if search string
@@ -70,11 +74,12 @@ const Query = {
     // the 'comments' query resolver: return all comments from the database with prisma
     comments(parent, args, { db, prisma }, info) {
 
-        // apply filtering parameters
+        // apply filtering parameters and sorting
         const opArgs = {
             first: args.first,
             skip: args.skip,
-            after: args.after
+            after: args.after,
+            orderBy: args.orderBy
         };
 
         // get comments according to filter criteria and selection set
@@ -148,7 +153,7 @@ const Query = {
         const userId = getUserId(request);
 
         // set operation argument: posts that are made by the particular logged in user
-        // also set filtering arguments
+        // also set filtering arguments and sorting
         const opArgs = {
             where: {
                 author: {
@@ -157,7 +162,8 @@ const Query = {
             },
             first: args.first,
             skip: args.skip,
-            after: args.after
+            after: args.after,
+            orderBy: args.orderBy
         };
 
         // add additional search criteria if the optional query is provided 

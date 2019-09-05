@@ -65,13 +65,18 @@
 
 # AuthPayload type returns a user and an auth token
 # now createUser returns AuthPayload
+
+# importing types and inputs from the generated prisma.graphql file using the graphql-import library
+
+# this is an import statement masked as a comment (this is how the graphql-import library works)
+# import UserOrderByInput, PostOrderByInput, CommentOrderByInput from './generated/prisma.graphql'
 type Query {
-    users(query: String, first: Int, skip: Int, after: String): [User!]!
-    posts(query: String, first: Int, skip: Int, after: String): [Post!]!
-    comments(first: Int, skip: Int, after: String): [Comment!]!
+    users(query: String, first: Int, skip: Int, after: String, orderBy: UserOrderByInput): [User!]!
+    posts(query: String, first: Int, skip: Int, after: String, orderBy: PostOrderByInput): [Post!]!
+    comments(first: Int, skip: Int, after: String, orderBy: CommentOrderByInput): [Comment!]!
     me: User!
     post(id: ID!): Post!
-    myPosts(query: String, first: Int, skip: Int, after: String): [Post!]!
+    myPosts(query: String, first: Int, skip: Int, after: String, orderBy: PostOrderByInput): [Post!]!
 }
 
 type Mutation {

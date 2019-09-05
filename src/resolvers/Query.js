@@ -14,15 +14,12 @@ const Query = {
         // if a query exists
         if (args.query) {
 
-            // set a 'where' property and check if either the query matches any name or email on the records
+            // set a 'where' property and check if either the query matches any name on the records
             // all this syntax knowledge is provided by the Prisma API through its auto-generated documentation
             opArgs.where = {
                 OR: [
                     {
                         name_contains: args.query
-                    },
-                    {
-                        email_contains: args.query
                     }
                 ]
             }
@@ -38,6 +35,7 @@ const Query = {
     // use prisma-binding to query for all psots in the database
     posts(parent, args, { db, prisma }, info) {
 
+        // fetch only posts that have been published
         const opArgs = {
             where: {
                 published: true

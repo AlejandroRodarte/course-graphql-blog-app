@@ -57,10 +57,21 @@ const Mutation = {
     },
 
     // create a new comment
-    createComment(parent, args, { db, pubsub, prisma, request }, info) {
+    async createComment(parent, args, { db, pubsub, prisma, request }, info) {
 
         // get id of logged in user
         const userId = getUserId(request);
+
+        // get the post by id and check if its published
+        const post = await prisma.exists.Post({
+            id: args.data.post,
+            published: true
+        });
+
+        // post not fetched: means post we wanted to comment one is unpublished: throw error
+        if (!post) {
+            throw new Error('Can not comment on private posts.');
+        }
 
         // call the correct mutation method, search for the Prisma API docs to pass the
         // correct operation arguments format
@@ -191,6 +202,29 @@ const Mutation = {
         // post does not exist: throw error
         if (!postExists) {
             throw new Error('Permission to update denied.');
+        }
+
+        // check if the selected post is published or not
+        const isPostPublished = await prisma.exists.Post({
+            id: args.id,
+            author: {
+                id: userId
+            },
+            published: true
+        });
+
+        // check if the post was published and client pretends to unpublish it
+        if (isPostPublished && !args.data.published) {
+
+            // delete all comments that were associated to that unpublished post
+            await prisma.mutation.deleteManyComments({
+                where: {
+                    post: {
+                        id: args.id
+                    }
+                }
+            });
+
         }
 
         // call the correct mutation method

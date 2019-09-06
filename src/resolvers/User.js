@@ -36,7 +36,7 @@ const User = {
 
         resolve(parent, args, { prisma, request }, info) {
 
-            const userId = getUserId(request);
+            const userId = getUserId(request, false);
     
             if (userId && userId === parent.id) {
                 return parent.password;
@@ -66,7 +66,7 @@ const User = {
                     },
                     published: true
                 }
-            });
+            }, info);
 
         }
 

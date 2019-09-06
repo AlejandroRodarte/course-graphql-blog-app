@@ -98,7 +98,7 @@ const Query = {
             where: {
                 id: userId
             }
-        }, info);
+        });
 
         // return the user
         return user;

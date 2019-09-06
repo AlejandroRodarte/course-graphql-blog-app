@@ -1,3 +1,6 @@
+import 'core-js';
+import 'regenerator-runtime/runtime';
+
 import { GraphQLServer, PubSub } from 'graphql-yoga';
 import db from './db';
 import { resolvers, fragmentReplacements } from './resolvers/index';

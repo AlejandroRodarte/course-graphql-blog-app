@@ -70,6 +70,27 @@ const User = {
 
         }
 
+    },
+
+    // comments resolver when acquiring user
+    comments: {
+
+        // require user id
+        fragment: 'fragment userId on User { id }',
+
+        // get all comments related to that user
+        resolve(parent, args, { prisma, request }, info) {
+
+            return prisma.query.comments({
+                where: {
+                    author: {
+                        id: parent.id
+                    }
+                }
+            }, info);
+
+        }
+
     }
 
 };

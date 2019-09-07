@@ -4,10 +4,12 @@ import 'regenerator-runtime/runtime';
 
 import 'cross-fetch/polyfill';
 
-import { gql } from 'apollo-boost';
 import seedDatabase, { userOne, postOne, postTwo } from './utils/seedDatabase';
 import getClient from './utils/getClient';
 import prisma from '../src/prisma';
+
+// import the graphql operations we use in this test suite
+import { getPosts, getMyPosts, updatePost, createPost, deletePost } from './utils/operations';
 
 // enabling apollo boost to make GraphQL queries
 // get the client from the utility method
@@ -20,18 +22,6 @@ beforeEach(seedDatabase);
 test('Should expose only public posts.', async () => {
 
     jest.setTimeout(10000);
-
-    // graphql query
-    const getPosts = gql`
-        query {
-            posts {
-                id
-                title
-                body
-                published
-            }
-        }
-    `;
 
     // use apollo to make the request
     const response = await client.query({ query: getPosts });
@@ -48,18 +38,6 @@ test('Should get posts from authenticated user.', async () => {
 
     // override client, get a new one with an auth token in the header
     const client = getClient(userOne.jwt);
-
-    // graphql query
-    const getMyPosts = gql`
-        query {
-            myPosts {
-                id
-                title
-                body
-                published
-            }
-        }
-    `;
 
     // fire off request
     const { data } = await client.query({ query: getMyPosts });
@@ -79,26 +57,20 @@ test('Should be able to update own post.', async () => {
     // get authenticated client
     const client = getClient(userOne.jwt);
 
-    // write the graphql query (note the ${} interpolation syntax)
-    // we change a published post into an unpublished one
-    const updatePost = gql`
-        mutation {
-            updatePost(
-                id: "${postOne.post.id}",
-                data: {
-                    published: false
-                }
-            ) {
-                id
-                title
-                body
-                published
-            }
+    // variables to pass in to the updatePost mutation
+    const variables = {
+        id: `${postOne.post.id}`,
+        data: {
+            published: false
         }
-    `;
+    };
 
     // use the client to kickstart the actual mutation
-    const { data } = await client.mutate({ mutation: updatePost });
+    // pass in the required graphql variables
+    const { data } = await client.mutate({ 
+        mutation: updatePost,
+        variables
+    });
 
     // expect that the received post has the `published` flag properly updated
     expect(data.updatePost.published).toBe(false);
@@ -120,26 +92,21 @@ test('Should create a post with an authenticated user.', async () => {
     // get authenticated user
     const client = getClient(userOne.jwt);
 
-    // graphql query to create a post
-    const createPost = gql`
-        mutation {
-            createPost(
-                data: {
-                    title: "Post by Alex 3.",
-                    body: "This is the post body.",
-                    published: true
-                }
-            ) {
-                id
-                title
-                body
-                published
-            }
+    // variables required for the updateUser mutation
+    const variables = {
+        data: {
+            title: 'Post by Alex 3.',
+            body: 'This is the post body.',
+            published: true
         }
-    `;
+    };
 
     // fire off the mutation and get the data
-    const { data } = await client.mutate({ mutation: createPost });
+    // pass in the required variables
+    const { data } = await client.mutate({ 
+        mutation: createPost,
+        variables
+    });
 
     // expect the data we got back as a response matches the one we hardcoded
     expect(data.createPost.title).toBe('Post by Alex 3.');
@@ -161,20 +128,17 @@ test('Should delete post that pertains to authenticated user that created that p
     // get authenticated client
     const client = getClient(userOne.jwt);
 
-    // graphql query to delete post two
-    const deletePost = gql`
-        mutation {
-            deletePost(id: "${postTwo.post.id}") {
-                id
-                title
-                body
-                published
-            }
-        }
-    `;
+    // variables required for the deletePost operation
+    const variables = {
+        id: `${postTwo.post.id}`
+    };
 
     // fire off the request
-    const { data } = await client.mutate({ mutation: deletePost });
+    // pass in the required variables
+    const { data } = await client.mutate({ 
+        mutation: deletePost,
+        variables
+    });
 
     // check the data we got back matches the one we got when persisting to the database through Prisma API
     expect(data.deletePost.id).toBe(postTwo.post.id);

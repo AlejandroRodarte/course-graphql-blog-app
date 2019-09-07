@@ -14,6 +14,26 @@ const userOne = {
     jwt: undefined
 };
 
+// global variable for post one: contains input information and a property to store the dumped
+// result we get when persisting it to the database (we mainly want the post's id)
+const postOne = {
+    input: {
+        title: 'Post 1 by Alejandro.',
+        body: 'This is my first post.',
+        published: true
+    },
+    post: undefined
+};
+
+const postTwo = {
+    input: {
+        title: 'Post 2 by Alejandro.',
+        body: 'This is my second post.',
+        published: false
+    },
+    post: undefined
+}
+
 // seed the database
 const seedDatabase = async () => {
 
@@ -34,11 +54,10 @@ const seedDatabase = async () => {
     userOne.jwt = jwt.sign({ userId: userOne.user.id }, process.env.JWT_SECRET);
 
     // first dummy post for the first user
-    await prisma.mutation.createPost({
+    // store returned value in the `post` property of the global `postOne` object
+    postOne.post = await prisma.mutation.createPost({
         data: {
-            title: 'Post 1 by Alejandro.',
-            body: 'This is my first post.',
-            published: true,
+            ...postOne.input,
             author: {
                 connect: {
                     id: userOne.user.id
@@ -47,12 +66,10 @@ const seedDatabase = async () => {
         }
     });
 
-    // second dummy post for the first user
-    await prisma.mutation.createPost({
+    // second dummy post for the first user; store result on postTwo.post
+    postTwo.post = await prisma.mutation.createPost({
         data: {
-            title: 'Post 2 by Alejandro.',
-            body: 'This is my second post.',
-            published: false,
+            ...postTwo.input,
             author: {
                 connect: {
                     id: userOne.user.id
@@ -64,4 +81,4 @@ const seedDatabase = async () => {
 };
 
 // export the async function and the global user data
-export { seedDatabase as default, userOne };
+export { seedDatabase as default, userOne, postOne, postTwo };

@@ -1,6 +1,6 @@
 // Babel 7 imports
 import 'core-js/stable';
-import 'regenerator-runtime/runtime'
+import 'regenerator-runtime/runtime';
 
 // import the GraphQLServer instance
 import server from './server';

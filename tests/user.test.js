@@ -4,62 +4,17 @@ import 'regenerator-runtime/runtime';
 
 import 'cross-fetch/polyfill';
 
-import ApolloBoost, { gql } from 'apollo-boost';
+import { gql } from 'apollo-boost';
 import prisma from '../src/prisma';
-import bcrypt from 'bcryptjs';
+import seedDatabase from './utils/seedDatabase';
+import getClient from './utils/getClient';
 
 // enabling apollo boost to make GraphQL queries
-const client = new ApolloBoost({
-    uri: 'http://localhost:4000'
-});
+// get the client instance from the utility method
+const client = getClient();
 
-// lifecycle method: runs before each unit test runs
-beforeEach(async () => {
-
-    // wipe out the database (users, posts and comments)
-    await prisma.mutation.deleteManyComments();
-    await prisma.mutation.deleteManyPosts();
-    await prisma.mutation.deleteManyUsers();
-
-    // seed the database with some dummy data (to test login, queries, deletes and updates)
-    // hashing passwors since we are accessing the Prisma API directly
-    const user = await prisma.mutation.createUser({
-        data: {
-            name: 'Alejandro Rodarte',
-            email: 'alex@gmail.com',
-            password: bcrypt.hashSync('jesus')
-        }
-    });
-
-    // first dummy post for the first user
-    await prisma.mutation.createPost({
-        data: {
-            title: 'Post 1 by Alejandro.',
-            body: 'This is my first post.',
-            published: true,
-            author: {
-                connect: {
-                    id: user.id
-                }
-            }
-        }
-    });
-
-    // second dummy post for the first user
-    await prisma.mutation.createPost({
-        data: {
-            title: 'Post 2 by Alejandro.',
-            body: 'This is my second post.',
-            published: false,
-            author: {
-                connect: {
-                    id: user.id
-                }
-            }
-        }
-    });
-
-});
+// lifecycle method: runs before each unit test runs; seed the database
+beforeEach(seedDatabase);
 
 // test: create a user in the database
 test('Should create a new user.', async () => {
@@ -121,33 +76,6 @@ test('Should expose public author profiles.', async () => {
     expect(response.data.users.length).toBe(1);
     expect(response.data.users[0].email).toBeNull();
     expect(response.data.users[0].name).toBe('Alejandro Rodarte');
-
-});
-
-// test: 'posts' query; get public posts
-test('Should expose only public posts.', async () => {
-
-    jest.setTimeout(10000);
-
-    // graphql query
-    const getPosts = gql`
-        query {
-            posts {
-                id
-                title
-                body
-                published
-            }
-        }
-    `;
-
-    // use apollo to make the request
-    const response = await client.query({ query: getPosts });
-
-    // expect two things: out of the two posts, we should be getting just one
-    // also, check that the post that came back is actually one that is published
-    expect(response.data.posts.length).toBe(1);
-    expect(response.data.posts[0].published).toBe(true);
 
 });
 

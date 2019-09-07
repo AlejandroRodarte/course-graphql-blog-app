@@ -6,7 +6,7 @@ import 'cross-fetch/polyfill';
 
 import { gql } from 'apollo-boost';
 import prisma from '../src/prisma';
-import seedDatabase from './utils/seedDatabase';
+import seedDatabase, { userOne } from './utils/seedDatabase';
 import getClient from './utils/getClient';
 
 // enabling apollo boost to make GraphQL queries
@@ -130,5 +130,32 @@ test('Should not signup with a password that is not 8+ characters long.', async 
 
     // wait for an error to appear after the mutation promise gets rejected
     await expect(client.mutate({ mutation: signup })).rejects.toThrow();
+
+});
+
+// fetch user profile
+test('Should fetch user profile.', async () => {
+
+    // use a new authenticated apollo client
+    const client = getClient(userOne.jwt);
+
+    // graphql query
+    const getProfile = gql`
+        query {
+            me {
+                id
+                name
+                email
+            }
+        }
+    `;
+
+    // kickoff the request
+    const { data } = await client.query({ query: getProfile });
+
+    // validate the data we got back matches the hardcoded one
+    expect(data.me.id).toBe(userOne.user.id);
+    expect(data.me.name).toBe(userOne.user.name);
+    expect(data.me.email).toBe(userOne.user.email);
 
 });

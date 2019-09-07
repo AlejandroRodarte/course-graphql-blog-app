@@ -8,7 +8,11 @@
     "heroku-postbuild": "babel src --out-dir dist --copy-files",
     "dev": "env-cmd -f ./config/dev.env nodemon src/index.js --ext js,graphql --exec babel-node",
     "get-schema": "graphql get-schema -p prisma --dotenv config/dev.env",
-    "test": "jest --watch"
+    "test": "env-cmd -f ./config/test.env jest --watch"
+  },
+  "jest": {
+    "globalSetup": "./tests/jest/globalSetup.js",
+    "globalTeardown": "./tests/jest/globalTeardown.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +23,7 @@
     "@babel/node": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
     "@babel/register": "^7.5.5",
+    "babel-register": "^6.26.0",
     "bcryptjs": "^2.4.3",
     "core-js": "^3.2.1",
     "env-cmd": "^10.0.1",

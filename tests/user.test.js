@@ -64,6 +64,8 @@ beforeEach(async () => {
 // test: create a user in the database
 test('Should create a new user.', async () => {
 
+    jest.setTimeout(10000);
+
     // type in the correct GraphQL query; parse with gql
     const createUser = gql`
         mutation {
@@ -98,6 +100,8 @@ test('Should create a new user.', async () => {
 // test: get users
 test('Should expose public author profiles.', async () => {
 
+    jest.setTimeout(10000);
+
     // graphql query
     const getUsers = gql`
         query {
@@ -123,6 +127,8 @@ test('Should expose public author profiles.', async () => {
 // test: 'posts' query; get public posts
 test('Should expose only public posts.', async () => {
 
+    jest.setTimeout(10000);
+
     // graphql query
     const getPosts = gql`
         query {
@@ -142,5 +148,59 @@ test('Should expose only public posts.', async () => {
     // also, check that the post that came back is actually one that is published
     expect(response.data.posts.length).toBe(1);
     expect(response.data.posts[0].published).toBe(true);
+
+});
+
+// expecting an error
+test('Should not login with bad credentials.', async () => {
+    
+    jest.setTimeout(10000);
+
+    // graphql query
+    const login = gql`
+        mutation {
+            login(
+                data: {
+                    email: "alex@gmail.com",
+                    password: "jesus2"
+                }
+            ) {
+                token
+            }
+        }
+    `;
+
+    // we can place a promise inside expect and use .rejects so expect() can wait
+    // for the promise to reject with an error; validate with toThrow()
+    await expect(client.mutate({ mutation: login })).rejects.toThrow();
+
+});
+
+// di not signup with short password
+test('Should not signup with a password that is not 8+ characters long.', async () => {
+
+    jest.setTimeout(10000);
+
+    // graphql query
+    const signup = gql`
+        mutation {
+            createUser(
+                data: {
+                    name: "Patricia Mendoza",
+                    email: "paty@gmail.com",
+                    password: "paty"
+                }
+            ) {
+                user {
+                    id
+                    name
+                }
+                token
+            }
+        }
+    `;
+
+    // wait for an error to appear after the mutation promise gets rejected
+    await expect(client.mutate({ mutation: signup })).rejects.toThrow();
 
 });

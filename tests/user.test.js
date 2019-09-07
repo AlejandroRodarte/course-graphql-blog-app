@@ -4,10 +4,12 @@ import 'regenerator-runtime/runtime';
 
 import 'cross-fetch/polyfill';
 
-import { gql } from 'apollo-boost';
 import prisma from '../src/prisma';
 import seedDatabase, { userOne } from './utils/seedDatabase';
 import getClient from './utils/getClient';
+
+// import our graphql queries
+import { createUser, getUsers, login, getProfile } from './utils/operations';
 
 // enabling apollo boost to make GraphQL queries
 // get the client instance from the utility method
@@ -21,26 +23,21 @@ test('Should create a new user.', async () => {
 
     jest.setTimeout(10000);
 
-    // type in the correct GraphQL query; parse with gql
-    const createUser = gql`
-        mutation {
-            createUser(
-                data: {
-                    name: "Magdaleno Rodriguez",
-                    email: "max@gmail.com",
-                    password: "guadalupana"
-                }
-            ) {
-                user {
-                    id
-                }
-                token
-            }
+    // variables for the createUser operation
+    const variables = {
+        data: {
+            name: 'Magdaleno Rodriguez',
+            email: 'max@gmail.com',
+            password: 'guadalupana'
         }
-    `;
+    };
 
     // fire off the mutation; get the promised response data
-    const response = await client.mutate({ mutation: createUser });
+    // pass in the variables required for this particular test case
+    const response = await client.mutate({ 
+        mutation: createUser,
+        variables
+    });
 
     // check if user was persisted properly to the database
     const userExists = await prisma.exists.User({
@@ -56,17 +53,6 @@ test('Should create a new user.', async () => {
 test('Should expose public author profiles.', async () => {
 
     jest.setTimeout(10000);
-
-    // graphql query
-    const getUsers = gql`
-        query {
-            users {
-                id
-                name
-                email
-            }
-        }
-    `;
 
     // use apollo to fire the request
     const response = await client.query({ query: getUsers });
@@ -84,23 +70,21 @@ test('Should not login with bad credentials.', async () => {
     
     jest.setTimeout(10000);
 
-    // graphql query
-    const login = gql`
-        mutation {
-            login(
-                data: {
-                    email: "alex@gmail.com",
-                    password: "jesus2"
-                }
-            ) {
-                token
-            }
+    // variables required for the login operation
+    const variables = {
+        data: {
+            email: 'alex@gmail.com',
+            password: 'jesus2'
         }
-    `;
+    };
 
     // we can place a promise inside expect and use .rejects so expect() can wait
     // for the promise to reject with an error; validate with toThrow()
-    await expect(client.mutate({ mutation: login })).rejects.toThrow();
+    // pass in the variables for the login operation
+    await expect(client.mutate({ 
+        mutation: login,
+        variables
+    })).rejects.toThrow();
 
 });
 
@@ -109,27 +93,21 @@ test('Should not signup with a password that is not 8+ characters long.', async 
 
     jest.setTimeout(10000);
 
-    // graphql query
-    const signup = gql`
-        mutation {
-            createUser(
-                data: {
-                    name: "Patricia Mendoza",
-                    email: "paty@gmail.com",
-                    password: "paty"
-                }
-            ) {
-                user {
-                    id
-                    name
-                }
-                token
-            }
+    // variables for the createUser operation
+    const variables = {
+        data: {
+            name: 'Patricia Mendoza',
+            email: 'paty@gmail.com',
+            password: 'paty'
         }
-    `;
+    };
 
     // wait for an error to appear after the mutation promise gets rejected
-    await expect(client.mutate({ mutation: signup })).rejects.toThrow();
+    // pass the variables for the createUser operation
+    await expect(client.mutate({ 
+        mutation: createUser,
+        variables
+    })).rejects.toThrow();
 
 });
 
@@ -138,17 +116,6 @@ test('Should fetch user profile.', async () => {
 
     // use a new authenticated apollo client
     const client = getClient(userOne.jwt);
-
-    // graphql query
-    const getProfile = gql`
-        query {
-            me {
-                id
-                name
-                email
-            }
-        }
-    `;
 
     // kickoff the request
     const { data } = await client.query({ query: getProfile });

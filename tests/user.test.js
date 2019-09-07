@@ -93,5 +93,54 @@ test('Should create a new user.', async () => {
     // expect the promised boolean to be true
     expect(userExists).toBe(true);
     
+});
+
+// test: get users
+test('Should expose public author profiles.', async () => {
+
+    // graphql query
+    const getUsers = gql`
+        query {
+            users {
+                id
+                name
+                email
+            }
+        }
+    `;
+
+    // use apollo to fire the request
+    const response = await client.query({ query: getUsers });
+
+    // check we get one user back, check that the returned email is actually hidden (null)
+    // and that the name matches the one we hardcoded
+    expect(response.data.users.length).toBe(1);
+    expect(response.data.users[0].email).toBeNull();
+    expect(response.data.users[0].name).toBe('Alejandro Rodarte');
+
+});
+
+// test: 'posts' query; get public posts
+test('Should expose only public posts.', async () => {
+
+    // graphql query
+    const getPosts = gql`
+        query {
+            posts {
+                id
+                title
+                body
+                published
+            }
+        }
+    `;
+
+    // use apollo to make the request
+    const response = await client.query({ query: getPosts });
+
+    // expect two things: out of the two posts, we should be getting just one
+    // also, check that the post that came back is actually one that is published
+    expect(response.data.posts.length).toBe(1);
+    expect(response.data.posts[0].published).toBe(true);
 
 });

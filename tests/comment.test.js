@@ -5,22 +5,18 @@ import 'regenerator-runtime/runtime';
 import 'cross-fetch/polyfill';
 
 import prisma from '../src/prisma';
-import seedDatabase, { userOne, userTwo, postOne, commentTwo, commentOne } from './utils/seedDatabase';
+import seedDatabase, { userOne, userTwo, postOne, postTwo, commentTwo, commentOne } from './utils/seedDatabase';
 import getClient from './utils/getClient';
 
 // import our graphql queries
-import { deleteComment, subscribeToComments } from './utils/operations';
-import { JestEnvironment } from '@jest/environment';
+import { getComments, createComment, deleteComment, subscribeToComments, updateComment } from './utils/operations';
 
 // enabling apollo boost to make GraphQL queries
 // get the client instance from the utility method
 const client = getClient();
 
 // lifecycle method: runs before each unit test runs; seed the database
-beforeEach(async () => {
-    await seedDatabase();
-    jest.setTimeout(20000);
-});
+beforeEach(seedDatabase);
 
 // testing deleting comments that a user is authorized two
 test('Should delete own comment.', async () => {
@@ -88,15 +84,19 @@ test('Should subscribe to comments for a post.', async (done) => {
 
     // since we are working with observables, we need to wait for the response to arrive
     // before the unit test code ends; this is why we use the done() callback
-    client.subscribe({
-        query: subscribeToComments,
-        variables
-    }).subscribe({
-        next(response) {
-            expect(response.data.comment.mutation).toBe('DELETED');
-            done();
-        }
-    });
+
+    // be sure to unsubscribe when next gets called to avoid conflicts with other tests
+    const subscription = 
+        client.subscribe({
+            query: subscribeToComments,
+            variables
+        }).subscribe({
+            next(response) {
+                expect(response.data.comment.mutation).toBe('DELETED');
+                subscription.unsubscribe();
+                done();
+            }
+        });
 
     // delete a comment, the next() function above should trigger with
     // the response object passed in
@@ -105,5 +105,203 @@ test('Should subscribe to comments for a post.', async (done) => {
             id: commentOne.comment.id
         }
     });
+
+});
+
+test('Should fetch post comments.', async () => {
+
+    const variables = {
+        id: postOne.post.id
+    };
+
+    const { data } = await client.query({
+        query: getComments,
+        variables
+    });
+    
+    expect(data.post.comments.length).toBe(2);
+
+    expect(data.post.comments[0].id).toBe(commentOne.comment.id);
+    expect(data.post.comments[0].text).toBe(commentOne.comment.text);
+
+    expect(data.post.comments[1].id).toBe(commentTwo.comment.id);
+    expect(data.post.comments[1].text).toBe(commentTwo.comment.text);
+
+});
+
+test('Should create a new comment.', async () => {
+
+    const client = getClient(userTwo.jwt);
+
+    const variables = {
+        data: {
+            text: 'This is pretty good!',
+            post: postOne.post.id
+        }
+    };
+
+    const { data } = await client.mutate({
+        mutation: createComment,
+        variables
+    });
+
+    expect(data.createComment.text).toBe('This is pretty good!');
+
+    expect(data.createComment.author.id).toBe(userTwo.user.id);
+    expect(data.createComment.post.id).toBe(postOne.post.id);
+
+    const commentExists = await prisma.exists.Comment({
+        id: data.createComment.id
+    });
+
+    expect(commentExists).toBe(true);
+
+});
+
+test('Should not create comment on draft post.', async () => {
+
+    const client = getClient(userTwo.jwt);
+
+    const variables = {
+        data: {
+            text: 'This is pretty good!',
+            post: postTwo.post.id
+        }
+    };
+
+    await expect(
+        client.mutate({
+            mutation: createComment,
+            variables
+        })
+    ).rejects.toThrow();
+
+});
+
+test('Should update comment.', async () => {
+
+    const client = getClient(userOne.jwt);
+
+    const variables = {
+        id: commentTwo.comment.id,
+        data: {
+            text: 'I changed my comment!'
+        }
+    };
+
+    const { data } = await client.mutate({
+        mutation: updateComment,
+        variables
+    });
+
+    expect(data.updateComment.text).toBe('I changed my comment!');
+
+    const commentExists = await prisma.exists.Comment({
+        id: data.updateComment.id,
+        text: data.updateComment.text
+    });
+
+    expect(commentExists).toBe(true);
+
+});
+
+test('Should not update another users comment.', async () => {
+
+    const client = getClient(userOne.jwt);
+
+    const variables = {
+        id: commentOne.comment.id,
+        data: {
+            text: 'I changed this comment!'
+        }
+    };
+
+    await expect(
+        client.mutate({
+            mutation: updateComment,
+            variables
+        })
+    ).rejects.toThrow();
+
+    const commentExists = await prisma.exists.Comment({
+        id: commentOne.comment.id,
+        text: 'I changed this comment!'
+    });
+
+    expect(commentExists).toBe(false);
+
+});
+
+test('Should not delete another users comment.', async () => {
+
+    const client = getClient(userTwo.jwt);
+
+    const variables = {
+        id: commentTwo.comment.id,
+    };
+
+    await expect(
+        client.mutate({
+            mutation: deleteComment,
+            variables
+        })
+    ).rejects.toThrow();
+
+    const commentExists = await prisma.exists.Comment({
+        id: commentTwo.comment.id
+    });
+
+    expect(commentExists).toBe(true);
+
+});
+
+test('Should require authentication to create a comment', async () => {
+
+    const variables = {
+        data: {
+            text: 'I did not expect that.',
+            post: postOne.post.id
+        }
+    };
+
+    await expect(
+        client.mutate({
+            mutation: createComment,
+            variables
+        })
+    ).rejects.toThrow();
+
+});
+
+test('Should require authentication to update a comment', async () => {
+
+    const variables = {
+        id: commentTwo.comment.id,
+        data: {
+            text: 'I changed my comment!'
+        }
+    };
+
+    await expect(
+        client.mutate({
+            mutation: updateComment,
+            variables
+        })
+    ).rejects.toThrow();
+
+});
+
+test('Should require authentication to delete a comment', async () => {
+
+    const variables = {
+        id: commentOne.comment.id,
+    };
+
+    await expect(
+        client.mutate({
+            mutation: deleteComment,
+            variables
+        })
+    ).rejects.toThrow();
 
 });

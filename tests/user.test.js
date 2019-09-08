@@ -4,8 +4,10 @@ import 'regenerator-runtime/runtime';
 
 import 'cross-fetch/polyfill';
 
+import jwt from 'jsonwebtoken';
+
 import prisma from '../src/prisma';
-import seedDatabase, { userOne } from './utils/seedDatabase';
+import seedDatabase, { userOne, userTwo } from './utils/seedDatabase';
 import getClient from './utils/getClient';
 
 // import our graphql queries
@@ -16,10 +18,7 @@ import { createUser, getUsers, login, getProfile } from './utils/operations';
 const client = getClient();
 
 // lifecycle method: runs before each unit test runs; seed the database
-beforeEach(async () => {
-    await seedDatabase();
-    jest.setTimeout(20000);
-});
+beforeEach(seedDatabase);
 
 // test: create a user in the database
 test('Should create a new user.', async () => {
@@ -119,5 +118,63 @@ test('Should fetch user profile.', async () => {
     expect(data.me.id).toBe(userOne.user.id);
     expect(data.me.name).toBe(userOne.user.name);
     expect(data.me.email).toBe(userOne.user.email);
+
+});
+
+test('Should not signup a user with email that is already in use.', async () => {
+
+    const variables = {
+        data: {
+            name: 'Pepe Rodarte',
+            email: 'alex@gmail.com',
+            password: 'thatstheway'
+        }
+    };
+
+    await expect(client.mutate({
+        mutation: createUser,
+        variables
+    })).rejects.toThrow();
+
+    const userExists = await prisma.exists.User({
+        name: 'Pepe Rodarte',
+        email: 'alex@gmail.com'
+    });
+
+    expect(userExists).toBe(false);
+
+});
+
+test('Should login and provide authentication token', async () => {
+
+    const variables = {
+        data: {
+            email: 'paty@gmail.com',
+            password: 'guadalupana'
+        }
+    };
+
+    const { data } = await client.mutate({
+        mutation: login,
+        variables
+    });
+
+    const decoded = jwt.verify(data.login.token, process.env.JWT_SECRET);
+
+    expect(decoded.userId).toBe(userTwo.user.id);
+
+});
+
+test('Should reject me query without authentication', async () => {
+    await expect(client.query({ query: getProfile })).rejects.toThrow();
+});
+
+test('Should hide emails when fetching list of users.', async () => {
+
+    const { data } = await client.query({ query: getUsers });
+
+    data.users.forEach(user => {
+        expect(user.email).toBeNull();
+    });
 
 });

@@ -147,9 +147,56 @@ const subscribeToPosts = gql`
     }
 `;
 
+const getPost = gql`
+    query($id: ID!) {
+        post(id: $id) {
+            id
+            title
+            body
+            published
+        }
+    }
+`;
+
+const getComments = gql`
+    query($id: ID!) {
+        post(id: $id) {
+            comments {
+                id
+                text
+            }
+        }
+    }
+`;
+
+const createComment = gql`
+    mutation($data: CreateCommentInput!) {
+        createComment(data: $data) {
+            id
+            text
+            author {
+                id
+            }
+            post {
+                id
+            }
+        }
+    }
+`;
+
+const updateComment = gql`
+    mutation($id: ID!, $data: UpdateCommentInput!) {
+        updateComment(id: $id, data: $data) {
+            id
+            text
+        }
+    }
+`;
+
 // export all operations
 export { 
-    createUser, login, getUsers, getProfile, getPosts, 
+    createUser, login, getUsers, getProfile, getPosts, getPost,
     getMyPosts, updatePost, createPost, deletePost,
-    deleteComment, subscribeToComments, subscribeToPosts
+    deleteComment, subscribeToComments, subscribeToPosts,
+    getComments, createComment, updateComment
 };

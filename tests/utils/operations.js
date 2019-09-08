@@ -119,9 +119,37 @@ const deleteComment = gql`
     }
 `;
 
+// graphql subscriptions to subscribe to comments of a particular post
+const subscribeToComments = gql`
+    subscription($postId: ID!) {
+        comment(postId: $postId) {
+            mutation
+            node {
+                id
+                text
+            }
+        }
+    }
+`;
+
+// graphql subscription to subscribe to changes in posts
+const subscribeToPosts = gql`
+    subscription {
+        post {
+            mutation
+            node {
+                id
+                title
+                body
+                published
+            }
+        }
+    }
+`;
+
 // export all operations
 export { 
     createUser, login, getUsers, getProfile, getPosts, 
     getMyPosts, updatePost, createPost, deletePost,
-    deleteComment
+    deleteComment, subscribeToComments, subscribeToPosts
 };

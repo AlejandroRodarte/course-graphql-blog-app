@@ -9,14 +9,17 @@ import getClient from './utils/getClient';
 import prisma from '../src/prisma';
 
 // import the graphql operations we use in this test suite
-import { getPosts, getMyPosts, updatePost, createPost, deletePost } from './utils/operations';
+import { getPosts, getMyPosts, updatePost, createPost, deletePost, subscribeToPosts } from './utils/operations';
 
 // enabling apollo boost to make GraphQL queries
 // get the client from the utility method
 const client = getClient();
 
 // seed the database before each unit test runs
-beforeEach(seedDatabase);
+beforeEach(async () => {
+    await seedDatabase();
+    jest.setTimeout(20000);
+});
 
 // test: 'posts' query; get public posts
 test('Should expose only public posts.', async () => {
@@ -29,7 +32,7 @@ test('Should expose only public posts.', async () => {
     expect(response.data.posts.length).toBe(1);
     expect(response.data.posts[0].published).toBe(true);
 
-}, 10000);
+});
 
 // get posts from authenticated user
 test('Should get posts from authenticated user.', async () => {
@@ -47,7 +50,7 @@ test('Should get posts from authenticated user.', async () => {
     expect(data.myPosts[1].title).toBe('Post 2 by Alejandro.');
     expect(data.myPosts[1].published).toBe(false);
 
-}, 10000);
+});
 
 // test updating posts
 test('Should be able to update own post.', async () => {
@@ -82,7 +85,7 @@ test('Should be able to update own post.', async () => {
     // expect that we actually found the updated post in the database
     expect(isPostUpdated).toBe(true);
 
-}, 10000);
+});
 
 // testing post creation
 test('Should create a post with an authenticated user.', async () => {
@@ -118,7 +121,7 @@ test('Should create a post with an authenticated user.', async () => {
 
     expect(postExists).toBe(true);
 
-}, 10000);
+});
 
 // testing deletion of posts of authenticated users
 test('Should delete post that pertains to authenticated user that created that post.', async () => {
@@ -151,4 +154,27 @@ test('Should delete post that pertains to authenticated user that created that p
 
     expect(postExists).toBe(false);
 
-}, 10000);
+});
+
+// testing subscriptions for changes in posts
+test('Should subscribe to changes in a post.', async (done) => {
+
+    // make the subscription and subscribe to wait for the response
+    // where the mutation type should be DELETED
+    client.subscribe({
+        query: subscribeToPosts
+    }).subscribe({
+        next(response) {
+            expect(response.data.post.mutation).toBe('DELETED');
+            done();
+        }
+    });
+
+    // starting the deletePost mutation to trigger the next() call
+    await prisma.mutation.deletePost({
+        where: {
+            id: postOne.post.id
+        }
+    });
+
+});

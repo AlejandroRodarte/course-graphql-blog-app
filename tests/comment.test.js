@@ -5,18 +5,22 @@ import 'regenerator-runtime/runtime';
 import 'cross-fetch/polyfill';
 
 import prisma from '../src/prisma';
-import seedDatabase, { userOne, userTwo, commentTwo } from './utils/seedDatabase';
+import seedDatabase, { userOne, userTwo, postOne, commentTwo, commentOne } from './utils/seedDatabase';
 import getClient from './utils/getClient';
 
 // import our graphql queries
-import { deleteComment } from './utils/operations';
+import { deleteComment, subscribeToComments } from './utils/operations';
+import { JestEnvironment } from '@jest/environment';
 
 // enabling apollo boost to make GraphQL queries
 // get the client instance from the utility method
 const client = getClient();
 
 // lifecycle method: runs before each unit test runs; seed the database
-beforeEach(seedDatabase);
+beforeEach(async () => {
+    await seedDatabase();
+    jest.setTimeout(20000);
+});
 
 // testing deleting comments that a user is authorized two
 test('Should delete own comment.', async () => {
@@ -47,7 +51,7 @@ test('Should delete own comment.', async () => {
 
     expect(commentExists).toBe(false);
 
-}, 10000);
+});
 
 // test case where user should not be able to delete a comment it does now own
 test('Should not delete other users comment.', async () => {
@@ -67,4 +71,39 @@ test('Should not delete other users comment.', async () => {
         variables
     })).rejects.toThrow();
 
-}, 10000);
+});
+
+// testing subscriptions to comments for a post
+test('Should subscribe to comments for a post.', async (done) => {
+
+    // variable: the post id to monitor
+    const variables = {
+        postId: postOne.post.id
+    };
+
+    // client.subscribe does not return a promise, but an observable
+    // this is why we subscribe() to it; each time a change is detected, 
+    // the next() function is called with the response object carried on
+    // on this case, we check if the mutation type detected as a 'DELETED' one
+
+    // since we are working with observables, we need to wait for the response to arrive
+    // before the unit test code ends; this is why we use the done() callback
+    client.subscribe({
+        query: subscribeToComments,
+        variables
+    }).subscribe({
+        next(response) {
+            expect(response.data.comment.mutation).toBe('DELETED');
+            done();
+        }
+    });
+
+    // delete a comment, the next() function above should trigger with
+    // the response object passed in
+    await prisma.mutation.deleteComment({
+        where: {
+            id: commentOne.comment.id
+        }
+    });
+
+});

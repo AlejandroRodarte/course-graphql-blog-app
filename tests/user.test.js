@@ -16,7 +16,10 @@ import { createUser, getUsers, login, getProfile } from './utils/operations';
 const client = getClient();
 
 // lifecycle method: runs before each unit test runs; seed the database
-beforeEach(seedDatabase);
+beforeEach(async () => {
+    await seedDatabase();
+    jest.setTimeout(20000);
+});
 
 // test: create a user in the database
 test('Should create a new user.', async () => {
@@ -45,7 +48,7 @@ test('Should create a new user.', async () => {
     // expect the promised boolean to be true
     expect(userExists).toBe(true);
     
-}, 10000);
+});
 
 // test: get users
 test('Should expose public author profiles.', async () => {
@@ -59,7 +62,7 @@ test('Should expose public author profiles.', async () => {
     expect(response.data.users[0].email).toBeNull();
     expect(response.data.users[0].name).toBe('Alejandro Rodarte');
 
-}, 10000);
+});
 
 // expecting an error
 test('Should not login with bad credentials.', async () => {
@@ -80,7 +83,7 @@ test('Should not login with bad credentials.', async () => {
         variables
     })).rejects.toThrow();
 
-}, 10000);
+});
 
 // di not signup with short password
 test('Should not signup with a password that is not 8+ characters long.', async () => {
@@ -101,7 +104,7 @@ test('Should not signup with a password that is not 8+ characters long.', async 
         variables
     })).rejects.toThrow();
 
-}, 10000);
+});
 
 // fetch user profile
 test('Should fetch user profile.', async () => {
@@ -117,4 +120,4 @@ test('Should fetch user profile.', async () => {
     expect(data.me.name).toBe(userOne.user.name);
     expect(data.me.email).toBe(userOne.user.email);
 
-}, 10000);
+});

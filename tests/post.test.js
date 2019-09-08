@@ -21,8 +21,6 @@ beforeEach(seedDatabase);
 // test: 'posts' query; get public posts
 test('Should expose only public posts.', async () => {
 
-    jest.setTimeout(10000);
-
     // use apollo to make the request
     const response = await client.query({ query: getPosts });
 
@@ -31,7 +29,7 @@ test('Should expose only public posts.', async () => {
     expect(response.data.posts.length).toBe(1);
     expect(response.data.posts[0].published).toBe(true);
 
-});
+}, 10000);
 
 // get posts from authenticated user
 test('Should get posts from authenticated user.', async () => {
@@ -49,7 +47,7 @@ test('Should get posts from authenticated user.', async () => {
     expect(data.myPosts[1].title).toBe('Post 2 by Alejandro.');
     expect(data.myPosts[1].published).toBe(false);
 
-});
+}, 10000);
 
 // test updating posts
 test('Should be able to update own post.', async () => {
@@ -84,7 +82,7 @@ test('Should be able to update own post.', async () => {
     // expect that we actually found the updated post in the database
     expect(isPostUpdated).toBe(true);
 
-});
+}, 10000);
 
 // testing post creation
 test('Should create a post with an authenticated user.', async () => {
@@ -120,7 +118,7 @@ test('Should create a post with an authenticated user.', async () => {
 
     expect(postExists).toBe(true);
 
-});
+}, 10000);
 
 // testing deletion of posts of authenticated users
 test('Should delete post that pertains to authenticated user that created that post.', async () => {
@@ -153,4 +151,4 @@ test('Should delete post that pertains to authenticated user that created that p
 
     expect(postExists).toBe(false);
 
-});
+}, 10000);

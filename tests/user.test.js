@@ -21,8 +21,6 @@ beforeEach(seedDatabase);
 // test: create a user in the database
 test('Should create a new user.', async () => {
 
-    jest.setTimeout(10000);
-
     // variables for the createUser operation
     const variables = {
         data: {
@@ -47,28 +45,24 @@ test('Should create a new user.', async () => {
     // expect the promised boolean to be true
     expect(userExists).toBe(true);
     
-});
+}, 10000);
 
 // test: get users
 test('Should expose public author profiles.', async () => {
-
-    jest.setTimeout(10000);
 
     // use apollo to fire the request
     const response = await client.query({ query: getUsers });
 
     // check we get one user back, check that the returned email is actually hidden (null)
     // and that the name matches the one we hardcoded
-    expect(response.data.users.length).toBe(1);
+    expect(response.data.users.length).toBe(2);
     expect(response.data.users[0].email).toBeNull();
     expect(response.data.users[0].name).toBe('Alejandro Rodarte');
 
-});
+}, 10000);
 
 // expecting an error
 test('Should not login with bad credentials.', async () => {
-    
-    jest.setTimeout(10000);
 
     // variables required for the login operation
     const variables = {
@@ -86,12 +80,10 @@ test('Should not login with bad credentials.', async () => {
         variables
     })).rejects.toThrow();
 
-});
+}, 10000);
 
 // di not signup with short password
 test('Should not signup with a password that is not 8+ characters long.', async () => {
-
-    jest.setTimeout(10000);
 
     // variables for the createUser operation
     const variables = {
@@ -109,7 +101,7 @@ test('Should not signup with a password that is not 8+ characters long.', async 
         variables
     })).rejects.toThrow();
 
-});
+}, 10000);
 
 // fetch user profile
 test('Should fetch user profile.', async () => {
@@ -125,4 +117,4 @@ test('Should fetch user profile.', async () => {
     expect(data.me.name).toBe(userOne.user.name);
     expect(data.me.email).toBe(userOne.user.email);
 
-});
+}, 10000);

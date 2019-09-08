@@ -97,7 +97,7 @@ const createPost = gql`
     }
 `;
 
-// graphql query to delete post two
+// graphql query to delete post with $id variable
 const deletePost = gql`
     mutation($id: ID!) {
         deletePost(id: $id) {
@@ -109,8 +109,19 @@ const deletePost = gql`
     }
 `;
 
+// graphql query to delete a comment with an $id variable
+const deleteComment = gql`
+    mutation($id: ID!) {
+        deleteComment(id: $id) {
+            id
+            text
+        }
+    }
+`;
+
 // export all operations
 export { 
     createUser, login, getUsers, getProfile, getPosts, 
-    getMyPosts, updatePost, createPost, deletePost 
+    getMyPosts, updatePost, createPost, deletePost,
+    deleteComment
 };
